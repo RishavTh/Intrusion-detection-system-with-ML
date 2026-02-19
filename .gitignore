@@ -1,0 +1,9 @@
+venv/
+__pycache__/
+*.pyc
+*.pyo
+ids.db
+ids_backup.db
+*.pdf
+.env
+slack_config.py
