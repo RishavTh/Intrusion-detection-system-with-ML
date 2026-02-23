@@ -1,7 +1,7 @@
 import urllib.request
 import json
 from datetime import datetime
-SLACK_WEBHOOK  = 'YOUR_SLACK_WEBHOOK_HERE'
+SLACK_WEBHOOK  = 'https://hooks.slack.com/services/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'
 NOTIFY_SSH      = True
 NOTIFY_SUDO     = True
 NOTIFY_FOREIGN  = True

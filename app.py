@@ -15,33 +15,49 @@ CORS(app)
 NMAP_SIGNATURES = [
     'nmaplowercheck', '/sdk', '/evox/about', '/HNAP1',
     '/nice%20ports', '/nmap', '/.git', '/admin.php',
-    '/login.php', '/wp-login', '/xmlrpc', '/phpmyadmin'
+    '/login.php', '/wp-login', '/xmlrpc', '/phpmyadmin',
+    'trinity.txt', 'mstshash=nmap', 'options sip'
 ]
+
 
 # Track suspicious HTTP requests per IP
 http_probe_tracker = defaultdict(list)  # ip -> [timestamps]
 http_alerted_ips   = set()
 
 def check_http_portscan(ip, path):
-    """Detect nmap/scanner by HTTP probe signatures."""
-    # Check if path matches nmap signatures
-    is_nmap_probe = any(sig.lower() in path.lower() for sig in NMAP_SIGNATURES)
-    if not is_nmap_probe:
-        return
-
+    """Detect nmap/scanner by signatures OR rapid requests."""
     now = datetime.now()
-    http_probe_tracker[ip].append(now)
 
-    # Keep only last 30 seconds
-    http_probe_tracker[ip] = [
-        t for t in http_probe_tracker[ip]
-        if (now - t).total_seconds() <= 30
-    ]
+    # Method 1 — signature match (classic nmap HTTP probes)
+    is_nmap_probe = any(sig.lower() in path.lower() for sig in NMAP_SIGNATURES)
+    if is_nmap_probe:
+        http_probe_tracker[ip].append(now)
+        http_probe_tracker[ip] = [
+            t for t in http_probe_tracker[ip]
+            if (now - t).total_seconds() <= 30
+        ]
 
-    probe_count = len(http_probe_tracker[ip])
+    # Method 2 — track ALL requests from this IP in 10 seconds
+    if not hasattr(check_http_portscan, 'all_tracker'):
+        check_http_portscan.all_tracker = {}
+    tracker = check_http_portscan.all_tracker
+    if ip not in tracker:
+        tracker[ip] = []
+    # Skip normal dashboard traffic — only track suspicious paths
+    dashboard_paths = ['/api/alerts', '/api/stats', '/api/health',
+                       '/style.css', '/app.js', '/favicon.ico',
+                       '/api/generate-report']
+    if any(path == p or (p != '/' and path.startswith(p)) for p in dashboard_paths):
+        return
+    tracker[ip].append(now)
+    tracker[ip] = [t for t in tracker[ip] if (now - t).total_seconds() <= 60]
 
-    # Alert if 3+ nmap probes from same IP within 30 seconds
-    if probe_count >= 3 and ip not in http_alerted_ips:
+    sig_count = len(http_probe_tracker[ip])
+    all_count = len(tracker[ip])
+    probe_count = max(sig_count, all_count)
+
+    # Alert if 2+ signature probes OR 6+ any requests in 10 seconds
+    if (sig_count >= 1 or all_count >= 2) and ip not in http_alerted_ips:
         http_alerted_ips.add(ip)
         alert = {
             'detected_at': str(now),
@@ -146,4 +162,4 @@ if __name__ == '__main__':
     print("📡 API       → http://localhost:5000/api/stats")
     print("🔍 nmap HTTP detection → ACTIVE")
     print("=" * 50)
-    app.run(host='0.0.0.0', port=5000, debug=False)
+    app.run(host='0.0.0.0', port=5000, debug=False, threaded=True)

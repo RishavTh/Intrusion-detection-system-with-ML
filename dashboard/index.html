@@ -54,6 +54,10 @@
     <li class="nav-item" data-tab="terminal"   onclick="switchTab('terminal')">
       <span class="nav-icon">▸</span><span>LOG TERMINAL</span>
     </li>
+    <li class="nav-item" data-tab="apistatus" onclick="switchTab('apistatus')">
+      <span class="nav-icon">⚙️</span>
+      <span class="nav-label">API STATUS</span>
+    </li>
   </ul>
 
   <div class="sidebar-section-label">THREAT TYPES</div>
@@ -337,6 +341,160 @@
         </table>
       </div>
     </div>
+    <div class="tab-pane" id="tab-apistatus">
+      <div style="padding:24px;">
+
+        <!-- Header row -->
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;">
+          <div>
+            <div style="font-size:11px;letter-spacing:3px;color:var(--accent);font-family:'JetBrains Mono',monospace;margin-bottom:4px;">SYSTEM HEALTH</div>
+            <div style="font-size:20px;font-weight:700;color:var(--text-primary);">API Endpoint Status</div>
+          </div>
+          <button onclick="runApiChecks()" id="api-check-btn" style="
+            background:linear-gradient(135deg,#1a3a5c,#2e75b6);
+            color:white;border:1px solid #2e75b6;
+            padding:10px 20px;border-radius:8px;
+            font-family:'JetBrains Mono',monospace;
+            font-size:0.75rem;letter-spacing:0.08em;
+            cursor:pointer;">
+            🔄 RUN CHECKS
+          </button>
+        </div>
+
+        <!-- Overall status banner -->
+        <div id="api-overall-banner" style="
+          background:rgba(74,96,128,0.2);
+          border:1px solid rgba(74,96,128,0.3);
+          border-left:4px solid #4a6080;
+          border-radius:8px;padding:14px 20px;
+          margin-bottom:24px;
+          font-family:'JetBrains Mono',monospace;
+          font-size:13px;color:#8ab4d4;
+          display:flex;align-items:center;gap:10px;">
+          ⏳ &nbsp;Click RUN CHECKS to test all endpoints
+        </div>
+
+        <!-- Endpoint cards grid -->
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;" id="api-cards-grid">
+
+          <!-- Card template — repeated for each endpoint -->
+          <div class="api-card" id="card-health" style="
+            background:var(--card-bg);
+            border:1px solid rgba(255,255,255,0.06);
+            border-radius:12px;padding:18px;
+            transition:all 0.3s;">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;">
+              <div>
+                <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--accent);margin-bottom:4px;">GET</div>
+                <div style="font-size:14px;font-weight:700;color:var(--text-primary);">/api/health</div>
+              </div>
+              <span id="badge-health" style="
+                font-family:'JetBrains Mono',monospace;
+                font-size:10px;font-weight:700;
+                padding:4px 10px;border-radius:4px;
+                background:rgba(74,96,128,0.2);
+                color:#8ab4d4;letter-spacing:1px;">PENDING</span>
+            </div>
+            <div style="font-size:12px;color:#8ab4d4;margin-bottom:8px;">System health check — confirms IDS is running</div>
+            <div id="meta-health" style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#4a6080;">—</div>
+          </div>
+
+          <div class="api-card" id="card-stats" style="
+            background:var(--card-bg);
+            border:1px solid rgba(255,255,255,0.06);
+            border-radius:12px;padding:18px;
+            transition:all 0.3s;">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;">
+              <div>
+                <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--accent);margin-bottom:4px;">GET</div>
+                <div style="font-size:14px;font-weight:700;color:var(--text-primary);">/api/stats</div>
+              </div>
+              <span id="badge-stats" style="
+                font-family:'JetBrains Mono',monospace;
+                font-size:10px;font-weight:700;
+                padding:4px 10px;border-radius:4px;
+                background:rgba(74,96,128,0.2);
+                color:#8ab4d4;letter-spacing:1px;">PENDING</span>
+            </div>
+            <div style="font-size:12px;color:#8ab4d4;margin-bottom:8px;">KPI counts — powers Overview tab cards</div>
+            <div id="meta-stats" style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#4a6080;">—</div>
+          </div>
+
+          <div class="api-card" id="card-alerts" style="
+            background:var(--card-bg);
+            border:1px solid rgba(255,255,255,0.06);
+            border-radius:12px;padding:18px;
+            transition:all 0.3s;">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;">
+              <div>
+                <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--accent);margin-bottom:4px;">GET</div>
+                <div style="font-size:14px;font-weight:700;color:var(--text-primary);">/api/alerts</div>
+              </div>
+              <span id="badge-alerts" style="
+                font-family:'JetBrains Mono',monospace;
+                font-size:10px;font-weight:700;
+                padding:4px 10px;border-radius:4px;
+                background:rgba(74,96,128,0.2);
+                color:#8ab4d4;letter-spacing:1px;">PENDING</span>
+            </div>
+            <div style="font-size:12px;color:#8ab4d4;margin-bottom:8px;">Last 100 alerts — powers Threat Feed tab</div>
+            <div id="meta-alerts" style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#4a6080;">—</div>
+          </div>
+
+          <div class="api-card" id="card-live" style="
+            background:var(--card-bg);
+            border:1px solid rgba(255,255,255,0.06);
+            border-radius:12px;padding:18px;
+            transition:all 0.3s;">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;">
+              <div>
+                <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--accent);margin-bottom:4px;">GET</div>
+                <div style="font-size:14px;font-weight:700;color:var(--text-primary);">/api/alerts/live</div>
+              </div>
+              <span id="badge-live" style="
+                font-family:'JetBrains Mono',monospace;
+                font-size:10px;font-weight:700;
+                padding:4px 10px;border-radius:4px;
+                background:rgba(74,96,128,0.2);
+                color:#8ab4d4;letter-spacing:1px;">PENDING</span>
+            </div>
+            <div style="font-size:12px;color:#8ab4d4;margin-bottom:8px;">Live polling — real-time alert updates every 4s</div>
+            <div id="meta-live" style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#4a6080;">—</div>
+          </div>
+
+
+
+          <div class="api-card" id="card-report" style="
+            background:var(--card-bg);
+            border:1px solid rgba(255,255,255,0.06);
+            border-radius:12px;padding:18px;
+            transition:all 0.3s;">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;">
+              <div>
+                <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--accent);margin-bottom:4px;">GET</div>
+                <div style="font-size:14px;font-weight:700;color:var(--text-primary);">/api/generate-report</div>
+              </div>
+              <span id="badge-report" style="
+                font-family:'JetBrains Mono',monospace;
+                font-size:10px;font-weight:700;
+                padding:4px 10px;border-radius:4px;
+                background:rgba(74,96,128,0.2);
+                color:#8ab4d4;letter-spacing:1px;">PENDING</span>
+            </div>
+            <div style="font-size:12px;color:#8ab4d4;margin-bottom:8px;">PDF report generator — NIST SP 800-61 Rev 2</div>
+            <div id="meta-report" style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#4a6080;">—</div>
+          </div>
+
+        </div>
+
+        <!-- Last checked timestamp -->
+        <div style="margin-top:20px;text-align:right;font-family:'JetBrains Mono',monospace;font-size:11px;color:#4a6080;">
+          Last checked: <span id="api-last-checked">Never</span>
+        </div>
+
+      </div>
+    </div>
+
     <div class="tab-pane" id="tab-terminal">
       <div class="terminal-wrap">
         <div class="term-header">

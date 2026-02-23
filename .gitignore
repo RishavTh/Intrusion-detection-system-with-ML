@@ -1,9 +1,7 @@
-venv/
 __pycache__/
 *.pyc
-*.pyo
+venv/
 ids.db
-ids_backup.db
-*.pdf
+new_logs.txt
+*.iso
 .env
-slack_config.py

@@ -13,8 +13,8 @@ columns = joblib.load(COLUMNS_PATH)
 print("✅ ML model loaded successfully")
 print(f"   Model expects {len(columns)} features")
 
-PORT_SCAN_THRESHOLD  = 5
-PORT_SCAN_WINDOW_SEC = 10
+PORT_SCAN_THRESHOLD  = 3
+PORT_SCAN_WINDOW_SEC = 30
 
 
 def detect_port_scans(df):
@@ -59,6 +59,45 @@ def detect_port_scans(df):
 
     return alerts, flagged
 
+
+def detect_rapid_connections(df):
+    """Detect plain nmap SYN scans — rapid connections from same IP."""
+    alerts  = []
+    flagged = set()
+    if df.empty:
+        return alerts, flagged
+    # Look for any events from same IP in short window
+    conn_df = df[df['source_ip'] != 'unknown'].copy()
+    if conn_df.empty:
+        return alerts, flagged
+    conn_df = conn_df.dropna(subset=['timestamp','source_ip'])
+    conn_df = conn_df.sort_values('timestamp')
+    for ip, group in conn_df.groupby('source_ip'):
+        group = group.sort_values('timestamp').reset_index(drop=True)
+        for i in range(len(group)):
+            t0 = group.loc[i,'timestamp']
+            try:
+                t1 = t0 + pd.Timedelta(seconds=10)
+            except:
+                continue
+            window = group[(group['timestamp'] >= t0) & (group['timestamp'] <= t1)]
+            if len(window) >= 8 and ip not in flagged:
+                row  = group.iloc[i]
+                conf = round(min(55.0 + len(window) * 3, 92.0), 1)
+                alerts.append({
+                    'timestamp'  : str(t0),
+                    'source_ip'  : ip,
+                    'username'   : 'unknown',
+                    'service'    : 'ssh',
+                    'status'     : 'port_scan',
+                    'event_type' : 'port_scan_probe',
+                    'threat_type': 'port_scan',
+                    'confidence' : conf,
+                    'raw_log'    : f'Rapid connection scan from {ip} — {len(window)} events in 10s',
+                })
+                flagged.add(ip)
+                break
+    return alerts, flagged
 
 def engineer_features(df):
     if df.empty:
@@ -187,6 +226,11 @@ def detect(lines):
 
     # Step 1 — Port scan (rule-based)
     ps_alerts, flagged_ips = detect_port_scans(df)
+    rc_alerts, rc_ips = detect_rapid_connections(df)
+    for a in rc_alerts:
+        if a['source_ip'] not in flagged_ips:
+            ps_alerts.append(a)
+            flagged_ips.add(a['source_ip'])
     if ps_alerts:
         print(f"🔍 Port scan from: {list(flagged_ips)}")
         alerts.extend(ps_alerts)

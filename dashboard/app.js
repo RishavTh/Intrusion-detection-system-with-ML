@@ -2,6 +2,7 @@
 const API       = '';
 let lastId      = 0;
 let allAlerts   = [];
+let statsCache  = {};
 let feedCleared = false;
 let termLines   = 0;
 let termAlerts  = 0;
@@ -23,6 +24,7 @@ const TAB_TITLES = {
   analytics : ['ANALYTICS',   'Threat Intelligence'],
   terminal  : ['LOG TERMINAL','Real-Time Log Monitor'],
   geomap    : ['GEO ATTACK MAP', 'Real-time attacker origin tracking'],
+  apistatus : ['API STATUS',  'System Health Monitor'],
 };
 
 function switchTab(name) {
@@ -115,18 +117,19 @@ function buildAnalyticsCharts() {
   analyticsBuilt = true;
 
   // Horizontal bar — threat types
+  // Use full database counts from statsCache — not just last 100 alerts
+  const susp = Math.max(
+    (statsCache.total_alerts||0)-(statsCache.ssh_brute_force||0)
+    -(statsCache.sudo_abuse||0)-(statsCache.foreign_ip||0)
+    -(statsCache.port_scan||0), 0
+  );
   const threatCounts = {
-    ssh_brute_force: 0, sudo_abuse: 0,
-    foreign_ip: 0, port_scan: 0, suspicious: 0
+    ssh_brute_force: statsCache.ssh_brute_force || 0,
+    sudo_abuse:      statsCache.sudo_abuse      || 0,
+    foreign_ip:      statsCache.foreign_ip      || 0,
+    port_scan:       statsCache.port_scan        || 0,
+    suspicious:      susp
   };
-  allAlerts.forEach(a => {
-    const t = (a.threat_type || '').trim();
-    if      (t === 'ssh_brute_force') threatCounts.ssh_brute_force++;
-    else if (t === 'sudo_abuse')      threatCounts.sudo_abuse++;
-    else if (t === 'foreign_ip')      threatCounts.foreign_ip++;
-    else if (t === 'port_scan')       threatCounts.port_scan++;
-    else if (t !== 'authorized')      threatCounts.suspicious++;
-  });
 
   if (horizC) horizC.destroy();
   horizC = new Chart(document.getElementById('horizBarChart'), {
@@ -538,6 +541,7 @@ async function fetchStats() {
   try {
     const r = await fetch(`${API}/api/stats`);
     const s = await r.json();
+    statsCache = s;
     updateKPIs(s);
     updateCharts(s);
     document.getElementById('ss-monitor').textContent = '● ACTIVE';
@@ -891,3 +895,150 @@ async function downloadReport() {
     setTimeout(() => { btn.textContent = '📄 NIST REPORT'; btn.disabled = false; }, 3000);
   }
 }
+
+// ── API Status Checker ────────────────────────────────────
+const API_ENDPOINTS = [
+  { key: 'health',  url: '/api/health',          desc: 'Health check' },
+  { key: 'stats',   url: '/api/stats',            desc: 'KPI stats' },
+  { key: 'alerts',  url: '/api/alerts',           desc: 'Alert list' },
+  { key: 'live',    url: '/api/alerts/live/0',    desc: 'Live polling' },
+  { key: 'report',  url: '/api/generate-report',  desc: 'PDF report', skipBody: true },
+];
+
+function setCardStatus(key, status, ms, detail) {
+  const badge = document.getElementById('badge-' + key);
+  const meta  = document.getElementById('meta-' + key);
+  const card  = document.getElementById('card-' + key);
+  if (!badge || !meta || !card) return;
+
+  if (status === 'OK') {
+    badge.style.background = 'rgba(0,255,136,0.15)';
+    badge.style.color      = '#00ff88';
+    badge.textContent      = '✅ OK';
+    card.style.borderColor = 'rgba(0,255,136,0.25)';
+    meta.style.color       = '#00ff88';
+    meta.textContent       = `${ms}ms — ${detail}`;
+  } else if (status === 'SLOW') {
+    badge.style.background = 'rgba(255,204,0,0.15)';
+    badge.style.color      = '#ffcc00';
+    badge.textContent      = '🟡 SLOW';
+    card.style.borderColor = 'rgba(255,204,0,0.25)';
+    meta.style.color       = '#ffcc00';
+    meta.textContent       = `${ms}ms — response slow`;
+  } else {
+    badge.style.background = 'rgba(255,51,85,0.15)';
+    badge.style.color      = '#ff3355';
+    badge.textContent      = '❌ ERROR';
+    card.style.borderColor = 'rgba(255,51,85,0.25)';
+    meta.style.color       = '#ff3355';
+    meta.textContent       = detail || 'Failed to connect';
+  }
+}
+
+async function checkEndpoint(ep) {
+  const start = performance.now();
+  try {
+    const controller = new AbortController();
+    const timeout    = setTimeout(() => controller.abort(), 6000);
+    const res        = await fetch(ep.url, { signal: controller.signal });
+    clearTimeout(timeout);
+    const ms = Math.round(performance.now() - start);
+
+    if (!res.ok) {
+      setCardStatus(ep.key, 'ERROR', ms, `HTTP ${res.status}`);
+      return 'ERROR';
+    }
+
+    // For report endpoint just check headers not body
+    let detail = '';
+    if (ep.skipBody) {
+      const ct = res.headers.get('content-type') || '';
+      detail = ct.includes('pdf') ? 'PDF returned' : 'Responded OK';
+    } else {
+      const data = await res.json();
+      if (ep.key === 'stats') {
+        const total = data.total_alerts || 0;
+        detail = `${total} total alerts`;
+      } else if (ep.key === 'alerts') {
+        const count = Array.isArray(data) ? data.length : '?';
+        detail = `${count} alerts returned`;
+      } else if (ep.key === 'live') {
+        detail = 'Polling active';
+      } else if (ep.key === 'geo') {
+        const count = Array.isArray(data) ? data.length : '?';
+        detail = `${count} geo alerts`;
+      } else if (ep.key === 'health') {
+        detail = data.status || 'Running';
+      } else {
+        detail = 'OK';
+      }
+    }
+
+    const status = ms > 2000 ? 'SLOW' : 'OK';
+    setCardStatus(ep.key, status, ms, detail);
+    return status;
+  } catch (e) {
+    const ms = Math.round(performance.now() - start);
+    const msg = e.name === 'AbortError' ? 'Timeout after 6s' : e.message;
+    setCardStatus(ep.key, 'ERROR', ms, msg);
+    return 'ERROR';
+  }
+}
+
+async function runApiChecks() {
+  const btn = document.getElementById('api-check-btn');
+  const banner = document.getElementById('api-overall-banner');
+  btn.textContent = '⏳ CHECKING...';
+  btn.disabled = true;
+  banner.style.borderLeftColor = '#ffcc00';
+  banner.style.color = '#ffcc00';
+  banner.innerHTML = '⏳ &nbsp;Checking all endpoints...';
+
+  // Reset all badges to CHECKING
+  API_ENDPOINTS.forEach(ep => {
+    const badge = document.getElementById('badge-' + ep.key);
+    const meta  = document.getElementById('meta-' + ep.key);
+    const card  = document.getElementById('card-' + ep.key);
+    if (badge) { badge.textContent = '⏳ CHECKING'; badge.style.background = 'rgba(255,204,0,0.1)'; badge.style.color = '#ffcc00'; }
+    if (meta)  { meta.textContent = 'Testing...'; meta.style.color = '#ffcc00'; }
+    if (card)  { card.style.borderColor = 'rgba(255,204,0,0.2)'; }
+  });
+
+  // Run all checks in parallel
+  const results = await Promise.all(API_ENDPOINTS.map(ep => checkEndpoint(ep)));
+
+  const ok    = results.filter(r => r === 'OK').length;
+  const slow  = results.filter(r => r === 'SLOW').length;
+  const error = results.filter(r => r === 'ERROR').length;
+  const total = results.length;
+
+  // Update overall banner
+  if (error === 0 && slow === 0) {
+    banner.style.borderLeftColor = '#00ff88';
+    banner.style.color = '#00ff88';
+    banner.innerHTML = `✅ &nbsp;All ${total} endpoints operational — system fully healthy`;
+  } else if (error === 0) {
+    banner.style.borderLeftColor = '#ffcc00';
+    banner.style.color = '#ffcc00';
+    banner.innerHTML = `🟡 &nbsp;${ok} OK · ${slow} slow · ${error} errors — system running with warnings`;
+  } else {
+    banner.style.borderLeftColor = '#ff3355';
+    banner.style.color = '#ff3355';
+    banner.innerHTML = `❌ &nbsp;${ok} OK · ${slow} slow · ${error} errors — some endpoints failing`;
+  }
+
+  // Update last checked time
+  const now = new Date();
+  document.getElementById('api-last-checked').textContent =
+    now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+  btn.textContent = '🔄 RUN CHECKS';
+  btn.disabled = false;
+}
+
+// Auto-run when tab is opened
+const _origSwitchTab = switchTab;
+switchTab = function(name) {
+  _origSwitchTab(name);
+  if (name === 'apistatus') runApiChecks();
+};
