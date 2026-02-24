@@ -1,48 +1,75 @@
 # 🛡️ Linux Authentication IDS (Auth-IDS)
 
-> Real-time Machine Learning based Intrusion Detection System for Linux authentication monitoring with live web dashboard.
-
-**Student:** Rishav Kumar Thapa | **ID:** 23047504  
-**Institution:** Islington College, Nepal | **Module:** CS6P05NI Final Year Project  
-**Supervisor:** Lecturer, Islington College Nepal
+> A real-time Intrusion Detection System that watches your Linux system's authentication logs and alerts you the moment an attack begins — powered by a Random Forest ML model.
 
 ---
 
-## 📸 Dashboard Preview
+## 🔍 What Problem Does It Solve?
 
-> Live 6-tab security dashboard with real-time threat detection
+Linux servers are constantly targeted by attackers — SSH brute force, privilege escalation, port scanning and foreign access attempts happen every day. Most system administrators only find out **after** the damage is done.
 
-
+**Auth-IDS monitors your system 24/7 and catches attacks as they happen.**
 
 ---
 
-## 🚀 Features
+## 🚀 What It Does
 
-| Feature | Status |
+- 🔴 **SSH Brute Force Detection** — Catches repeated failed login attempts from attackers trying to guess passwords using tools like Hydra
+- 🟡 **Privilege Escalation Detection** — Flags unauthorised sudo usage and privilege abuse attempts
+- 🟣 **Foreign IP Detection** — Alerts when login attempts come from unexpected geographic locations
+- 🟠 **Port Scan Detection** — Identifies reconnaissance scans from tools like nmap before a real attack begins
+- 📊 **Live Web Dashboard** — 6-tab interface with real-time threat feed, charts, analytics and world attack map
+- 📲 **Instant Slack Alerts** — Notifies your Slack channel the moment a threat is detected with full details
+- 📄 **NIST Incident Reports** — Generates professional PDF reports following NIST SP 800-61 Rev 2 standard
+- 🌍 **GeoIP World Map** — Visualises attacker locations on an interactive world map in real time
+
+---
+
+## ⚙️ How It Works
+```
+/var/log/auth.log
+       ↓
+   monitor.py        watches log file every 3 seconds
+       ↓
+   parser.py         extracts features from each log line
+       ↓
+   detector.py       Random Forest ML model classifies the threat
+       ↓
+   database.py       stores alert in SQLite
+       ↓
+   slack_notify.py   sends instant Slack notification
+       ↓
+   dashboard         displays live on web interface
+```
+
+---
+
+## 🧠 ML Model
+
+| Property | Detail |
 |---|---|
-| SSH Brute Force Detection | ✅ Active |
-| Sudo Privilege Abuse Detection | ✅ Active |
-| Foreign IP Geographic Detection | ✅ Active |
-| Port Scan Detection (SSH + HTTP) | ✅ Active |
-| Live 6-Tab Web Dashboard | ✅ Active |
-| GeoIP World Attack Map | ✅ Active |
-| Slack Instant Notifications | ✅ Active |
-| NIST SP 800-61 Rev 2 PDF Reports | ✅ Active |
-| API Health Status Monitor | ✅ Active |
+| Algorithm | Random Forest |
+| Trees | 100 |
+| Features | 39 |
+| Training Records | 5,026 balanced samples |
+| Test Accuracy | 100% |
+| Output | Threat type + confidence score (0-100%) |
+
+The model classifies each authentication event into: `ssh_brute_force`, `sudo_abuse`, `foreign_ip`, `port_scan`, or `authorized`.
 
 ---
 
 ## 📁 Project Structure
 ```
 Auth_IDS/
-├── app.py                  # Flask server & API endpoints
+├── app.py                  # Flask server & 6 API endpoints
 ├── monitor.py              # Real-time log watcher (3s polling)
 ├── parser.py               # Log parser (11 regex patterns)
 ├── detector.py             # Random Forest ML detection engine
 ├── database.py             # SQLite alert storage
 ├── slack_notify.py         # Slack webhook notifications
 ├── report_generator.py     # NIST SP 800-61 Rev 2 PDF generator
-├── linux_auth_model.pkl    # Trained ML model (100 trees)
+├── linux_auth_model.pkl    # Trained ML model
 ├── model_columns.pkl       # 39 feature columns
 └── dashboard/
     ├── index.html          # 6-tab dashboard UI
@@ -52,34 +79,13 @@ Auth_IDS/
 
 ---
 
-## ⚙️ Tech Stack
-
-| Component | Technology |
-|---|---|
-| Backend | Python 3.12, Flask |
-| ML Model | Random Forest (100 trees, 39 features) |
-| Database | SQLite |
-| Frontend | Vanilla JavaScript, Chart.js, Leaflet.js |
-| Notifications | Slack Webhooks |
-| Training Dataset | 5,026 balanced records |
-| Model Accuracy | 100% on test set |
-
----
-
 ## 📦 Installation
 ```bash
-# Clone repository
-git clone https://github.com/abhisek-bhattarai/Linux-Auth-IDS.git
-cd Linux-Auth-IDS
-
-# Create virtual environment
+git clone https://github.com/abhisek-bhattarai/SIEM-System.git
+cd SIEM-System
 python3 -m venv venv
 source venv/bin/activate
-
-# Install dependencies
 pip install flask flask-cors pandas scikit-learn requests reportlab
-
-# Run system (requires sudo for auth.log access)
 sudo python3 app.py
 ```
 
@@ -89,40 +95,40 @@ Open browser: **http://localhost:5000**
 
 ## 🔧 Configuration
 
-**Slack Notifications:**
+Add your Slack webhook in `slack_notify.py`:
 ```python
-# In slack_notify.py — replace with your webhook
 WEBHOOK_URL = "https://hooks.slack.com/services/YOUR/WEBHOOK/HERE"
 ```
+
+Get a free webhook at: https://api.slack.com/apps
 
 ---
 
 ## 🌐 API Endpoints
 
-| Endpoint | Method | Description |
-|---|---|---|
-| `/` | GET | Dashboard UI |
-| `/api/health` | GET | System health check |
-| `/api/stats` | GET | Alert statistics |
-| `/api/alerts` | GET | Last 100 alerts |
-| `/api/alerts/live/<id>` | GET | Live polling every 4s |
-| `/api/generate-report` | GET | NIST PDF report |
+| Endpoint | Description |
+|---|---|
+| `GET /` | Live dashboard UI |
+| `GET /api/health` | System health check |
+| `GET /api/stats` | Full alert statistics |
+| `GET /api/alerts` | Last 100 alerts |
+| `GET /api/alerts/live/<id>` | Real-time polling every 4s |
+| `GET /api/generate-report` | Download NIST PDF report |
 
 ---
 
 ## 📊 Live Detection Results
-> ⚡ Current stats as of **February 23, 2026** — updated during active deployment
 
-| Threat Type | Alerts | Percentage |
+> Captured during live deployment — Ubuntu 24.04 target system, Kali Linux attacker
+
+| Threat Type | Alerts | Share |
 |---|---|---|
 | 🔴 SSH Brute Force | 4,500 | 58.6% |
-| ⚫ Suspicious | 3,072 | 40.0% |
+| ⚫ Suspicious Activity | 3,072 | 40.0% |
 | 🟠 Port Scan | 73 | 0.9% |
 | 🟣 Foreign IP | 59 | 0.8% |
 | 🟡 Sudo Abuse | 44 | 0.6% |
 | **Total** | **7,677** | **100%** |
-
-> These are **real detections** captured during live testing with Kali Linux attack simulation.
 
 ---
 
@@ -130,11 +136,18 @@ WEBHOOK_URL = "https://hooks.slack.com/services/YOUR/WEBHOOK/HERE"
 
 - Ubuntu 20.04 / 22.04 / 24.04
 - Python 3.10+
-- `/var/log/auth.log` read access
+- Read access to `/var/log/auth.log`
 - Minimum 2GB RAM
 
 ---
 
-## 📄 License
+## 🛠️ Tech Stack
 
-This project is for academic purposes only — Islington College Final Year Project 2025/2026.
+| Layer | Technology |
+|---|---|
+| Backend | Python 3.12, Flask |
+| ML | scikit-learn Random Forest |
+| Database | SQLite |
+| Frontend | JavaScript, Chart.js, Leaflet.js |
+| Alerts | Slack Webhooks |
+| Reports | ReportLab PDF |
