@@ -119,7 +119,11 @@ Get a free webhook at: https://api.slack.com/apps
 
 ## 📊 Live Detection Results
 
-> Captured during live deployment — Ubuntu 24.04 target system, Kali Linux attacker
+> 📅 Captured on **24 February 2026** during live deployment  
+> 🖥️ Target: Ubuntu 24.04 LTS — Attacker: Kali Linux  
+> ⚡ System actively running and detecting in real-time
+
+![IDS Live Dashboard](IDS_status.png)
 
 | Threat Type | Alerts | Share |
 |---|---|---|
