@@ -1,10 +1,10 @@
-# 🛡️ Linux Authentication Intrusion Detection System
+# 🛡️ Linux Authentication IDS (Auth-IDS)
 
 > Real-time Machine Learning based Intrusion Detection System for Linux authentication monitoring with live web dashboard.
 
 **Student:** Rishav Kumar Thapa | **ID:** 23047504  
 **Institution:** Islington College, Nepal | **Module:** CS6P05NI Final Year Project  
-**Supervisor:** [Your Supervisor Name]
+**Supervisor:** Lecturer, Islington College Nepal
 
 ---
 
@@ -12,7 +12,7 @@
 
 > Live 6-tab security dashboard with real-time threat detection
 
-![Dashboard](dashboard/preview.png)
+
 
 ---
 
@@ -69,8 +69,8 @@ Auth_IDS/
 ## 📦 Installation
 ```bash
 # Clone repository
-git clone https://github.com/abhisek-bhattarai/SIEM-System.git
-cd SIEM-System
+git clone https://github.com/abhisek-bhattarai/Linux-Auth-IDS.git
+cd Linux-Auth-IDS
 
 # Create virtual environment
 python3 -m venv venv
