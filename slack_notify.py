@@ -1,3 +1,4 @@
+import socket
 import urllib.request
 import json
 from datetime import datetime
@@ -43,7 +44,7 @@ def build_payload(alert):
     color, icon, severity, label = config.get(threat, ('#4a6080', '⚪', 'LOW', 'Unknown'))
 
     return {
-        "text": f"{icon} *IDS ALERT — {severity}* | {label}",
+        "text": f"{icon} *AUTH-IDS ALERT* | {label} | Severity: {severity}",
         "attachments": [{
             "color": color,
             "blocks": [
@@ -55,7 +56,7 @@ def build_payload(alert):
                     "type": "section",
                     "fields": [
                         {"type": "mrkdwn", "text": f"*Severity*\n{severity}"},
-                        {"type": "mrkdwn", "text": f"*Host*\n`rishav-Vbox`"},
+                        {"type": "mrkdwn", "text": f"*Host*\n`{socket.gethostname()}`"},
                         {"type": "mrkdwn", "text": f"*Source IP*\n`{ip}`"},
                         {"type": "mrkdwn", "text": f"*Username*\n`{user}`"},
                         {"type": "mrkdwn", "text": f"*Event Type*\n`{event}`"},
@@ -72,7 +73,7 @@ def build_payload(alert):
                 {
                     "type": "context",
                     "elements": [{"type": "mrkdwn",
-                    "text": "🛡 Linux Auth IDS · rishav-Vbox · CS6P05NI Final Year Project"}]
+                    "text": "🛡 Linux Authentication IDS · Module: CS6P05NI · Islington College Nepal · Student: Rishav Kumar Thapa (23047504)"}]
                 }
             ]
         }]
