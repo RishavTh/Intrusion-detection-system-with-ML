@@ -73,7 +73,7 @@ def build_payload(alert):
                 {
                     "type": "context",
                     "elements": [{"type": "mrkdwn",
-                    "text": "🛡 Linux Authentication IDS · Module: CS6P05NI · Islington College Nepal · Student: Rishav Kumar Thapa (23047504)"}]
+                    "text": "🛡 Auth-IDS · Automated Security Alert · rishav-Vbox · Ubuntu 24.04 LTS"}]
                 }
             ]
         }]
