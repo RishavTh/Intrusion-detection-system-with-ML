@@ -96,7 +96,7 @@ WEBHOOK_URL = "https://hooks.slack.com/services/YOUR/WEBHOOK/HERE"
 
 ## Live Detection Results
 
-Captured on 24 February 2026 during live deployment on Ubuntu 24.04 LTS with Kali Linux as the attacking machine.
+Captured on 12 March 2026 during live deployment on Ubuntu 24.04 LTS with Kali Linux as the attacking machine.
 
 ![Auth-IDS Live Dashboard](IDS_status.png)
 
