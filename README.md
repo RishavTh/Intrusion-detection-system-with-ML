@@ -12,6 +12,7 @@ Linux servers are constantly targeted by SSH brute force, privilege escalation, 
 - 🟡 **Privilege Escalation Detection** — Flags unauthorised sudo usage and privilege abuse attempts
 - 🟣 **Foreign IP Detection** — Alerts when login attempts come from unexpected geographic locations
 - 🟠 **Port Scan Detection** — Identifies reconnaissance scans from nmap before a real attack begins
+- 🔫 **Password Spray Detection** — Catches slow credential attacks targeting multiple usernames with one password
 - 📊 **Live Web Dashboard** — 6-tab interface with real-time threat feed, charts and world attack map
 - 📲 **Instant Slack Alerts** — Notifies your Slack channel the moment a threat is detected
 - 📄 **NIST Incident Reports** — Generates PDF reports following NIST SP 800-61 Rev 2 standard
@@ -101,12 +102,13 @@ Captured on 24 February 2026 during live deployment on Ubuntu 24.04 LTS with Kal
 
 | Threat Type | Alerts | Share |
 |---|---|---|
-| 🔴 SSH Brute Force | 4,571 | 58.9% |
-| ⚫ Suspicious Activity | 3,085 | 39.7% |
-| 🟠 Port Scan | 81 | 1.0% |
-| 🟣 Foreign IP | 59 | 0.8% |
-| 🟡 Sudo Abuse | 46 | 0.6% |
-| Total | 7,761 | 100% |
+| 🔴 SSH Brute Force | 6,435 | 64.9% |
+| ⚫ Suspicious Activity | 2,982 | 30.1% |
+| 🟠 Port Scan | 232 | 2.3% |
+| 🟣 Foreign IP | 154 | 1.6% |
+| 🟡 Sudo Abuse | 54 | 0.5% |
+| 🔫 Password Spray | 26 | 0.3% |
+| Total | 9,922 | 100% |
 
 ## System Requirements
 
