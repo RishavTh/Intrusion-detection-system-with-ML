@@ -442,8 +442,12 @@ button:hover{border-color:var(--acc);color:var(--acc)}
 /* Port scan card */
 .kpi-portscan::before { background: #ff7730 }
 .kpi-portscan .kpi-num { color: #ff7730 }
-.st-scan { background: #ff7730 }
+.kpi-spray::before    { background: #ff6600 }
+.kpi-spray .kpi-num   { color: #ff6600 }
+.st-scan  { background: #ff7730 }
+.st-spray { background: #ff6600 }
 .tbadge.tb-portscan { background:#ff773010; color:#ff7730; border:1px solid #ff773030 }
+.tbadge.tb-spray    { background:#ff660010; color:#ff6600; border:1px solid #ff660030 }
 
 /* KPI percentage */
 .kpi-pct {

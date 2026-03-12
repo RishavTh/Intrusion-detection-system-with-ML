@@ -46,11 +46,11 @@ function initCharts() {
   donutC = new Chart(document.getElementById('donutChart'), {
     type: 'doughnut',
     data: {
-      labels  : ['SSH Brute Force','Sudo Abuse','Foreign IP','Port Scan','Suspicious'],
+      labels  : ['SSH Brute Force','Sudo Abuse','Foreign IP','Port Scan','Password Spray','Suspicious'],
       datasets: [{
         data           : [0,0,0,0],
-        backgroundColor: ['#ff335522','#ffcc0022','#aa55ff22','#2a3a5022'],
-        borderColor    : ['#ff3355',  '#ffcc00',  '#aa55ff',  '#4a6080'],
+        backgroundColor: ['#ff335522','#ffcc0022','#aa55ff22','#ff773022','#ff660022','#2a3a5022'],
+        borderColor    : ['#ff3355',  '#ffcc00',  '#aa55ff',  '#ff7730',  '#ff6600',  '#4a6080'],
         borderWidth    : 1.5,
         hoverOffset    : 5
       }]
@@ -120,7 +120,7 @@ function buildAnalyticsCharts() {
   // Use full database counts from statsCache — not just last 100 alerts
   const susp = Math.max(
     (statsCache.total_alerts||0)-(statsCache.ssh_brute_force||0)
-    -(statsCache.sudo_abuse||0)-(statsCache.foreign_ip||0)
+    -(statsCache.sudo_abuse||0)-(statsCache.foreign_ip||0)-(statsCache.password_spray||0)
     -(statsCache.port_scan||0), 0
   );
   const threatCounts = {
@@ -128,6 +128,7 @@ function buildAnalyticsCharts() {
     sudo_abuse:      statsCache.sudo_abuse      || 0,
     foreign_ip:      statsCache.foreign_ip      || 0,
     port_scan:       statsCache.port_scan        || 0,
+    password_spray:  statsCache.password_spray  || 0,
     suspicious:      susp
   };
 
@@ -135,14 +136,14 @@ function buildAnalyticsCharts() {
   horizC = new Chart(document.getElementById('horizBarChart'), {
     type:'bar',
     data:{
-      labels:['SSH Brute Force','Sudo Abuse','Foreign IP','Port Scan','Suspicious'],
+      labels:['SSH Brute Force','Sudo Abuse','Foreign IP','Port Scan','Password Spray','Suspicious'],
       datasets:[{
         data:[
           threatCounts.ssh_brute_force, threatCounts.sudo_abuse,
-          threatCounts.foreign_ip,      threatCounts.port_scan, threatCounts.suspicious
+          threatCounts.foreign_ip,      threatCounts.port_scan, threatCounts.password_spray, threatCounts.suspicious
         ],
-        backgroundColor:['#ff335530','#ffcc0030','#aa55ff30','#ff773030','#2a3a5030'],
-        borderColor    :['#ff3355',  '#ffcc00',  '#aa55ff',  '#ff7730',  '#4a6080'],
+        backgroundColor:['#ff335530','#ffcc0030','#aa55ff30','#ff773030','#ff660030','#2a3a5030'],
+        borderColor    :['#ff3355',  '#ffcc00',  '#aa55ff',  '#ff7730',  '#ff6600',  '#4a6080'],
         borderWidth:1,borderRadius:4
       }]
     },
@@ -286,13 +287,13 @@ function buildAnalyticsCharts() {
 function updateCharts(stats) {
   const susp = Math.max(
     (stats.total_alerts||0)-(stats.ssh_brute_force||0)
-    -(stats.sudo_abuse||0)-(stats.foreign_ip||0), 0
+    -(stats.sudo_abuse||0)-(stats.foreign_ip||0)-(stats.password_spray||0), 0
   );
 
   // Donut
   donutC.data.datasets[0].data = [
     stats.ssh_brute_force||0, stats.sudo_abuse||0,
-    stats.foreign_ip||0,      stats.port_scan||0, susp
+    stats.foreign_ip||0,      stats.port_scan||0, stats.password_spray||0, susp
   ];
   donutC.update();
   document.getElementById('d-total').textContent = stats.total_alerts||0;
@@ -361,6 +362,7 @@ function updateKPIs(s) {
   animNum('k-sudo',    s.sudo_abuse||0);
   animNum('k-foreign', s.foreign_ip||0);
   animNum('k-portscan', s.port_scan||0);
+  animNum('k-spray',   s.password_spray||0);
 
   // Percentage of total
   const tot = s.total_alerts || 1;
@@ -370,14 +372,16 @@ function updateKPIs(s) {
   if(el('pct-sudo'))     el('pct-sudo').textContent     = pct(s.sudo_abuse||0);
   if(el('pct-foreign'))  el('pct-foreign').textContent  = pct(s.foreign_ip||0);
   if(el('pct-portscan')) el('pct-portscan').textContent = pct(s.port_scan||0);
+  if(el('pct-spray'))    el('pct-spray').textContent    = pct(s.password_spray||0);
   animNum('tb-total',  s.total_alerts||0);
 
   // Sidebar counts
-  const susp = Math.max((s.total_alerts||0)-(s.ssh_brute_force||0)-(s.sudo_abuse||0)-(s.foreign_ip||0),0);
+  const susp = Math.max((s.total_alerts||0)-(s.ssh_brute_force||0)-(s.sudo_abuse||0)-(s.foreign_ip||0)-(s.password_spray||0)-(s.port_scan||0),0);
   document.getElementById('sb-ssh').textContent    = s.ssh_brute_force||0;
   document.getElementById('sb-sudo').textContent   = s.sudo_abuse||0;
   document.getElementById('sb-foreign').textContent= s.foreign_ip||0;
   document.getElementById('sb-portscan').textContent = s.port_scan||0;
+  document.getElementById('sb-spray').textContent  = s.password_spray||0;
   document.getElementById('sb-susp').textContent   = susp;
 
   // Nav badge
@@ -407,7 +411,8 @@ function showToast(alert) {
   const cls   = tbCls(alert.threat_type).replace('tbadge ','').replace('tb-','toast-');
   const icon  = alert.threat_type?.includes('ssh') ? '🔴'
               : alert.threat_type?.includes('sudo') ? '🟡'
-              : alert.threat_type?.includes('foreign') ? '🟣' : '⚪';
+              : alert.threat_type?.includes('foreign') ? '🟣'
+              : alert.threat_type?.includes('spray') ? '🔫' : '⚪';
   const title = fmtThreat(alert.threat_type);
 
   const el = document.createElement('div');
@@ -451,7 +456,8 @@ function addAlertToTerminal(a) {
   document.getElementById('term-alerts').textContent = termAlerts;
   const icon = a.threat_type?.includes('ssh') ? '🔴'
              : a.threat_type?.includes('sudo') ? '🟡'
-             : a.threat_type?.includes('foreign') ? '🟣' : '⚠';
+             : a.threat_type?.includes('foreign') ? '🟣'
+             : a.threat_type?.includes('spray') ? '🔫' : '⚠';
   const cls  = a.threat_type?.includes('ssh') ? 'term-alert'
              : a.threat_type?.includes('sudo') ? 'term-warn' : 'term-info';
   addTermLine(`${icon} ALERT #${a.id} | ${fmtThreat(a.threat_type)} | ${a.source_ip||'?'} | ${a.username||'?'} | ${a.event_type||'?'} | ${a.confidence||0}%`, cls);
@@ -604,6 +610,7 @@ function tbCls(t) {
   if (t.includes('foreign'))                        return 'tb-foreign';
   if (t.includes('port_scan') || t === 'port_scan') return 'tb-portscan';
   return 'tb-other';
+  if (t.includes('spray'))                          return 'tb-spray';
 }
 function fmtThreat(t) {
   if (!t||t==='none')                               return '⚪ Suspicious';
@@ -612,6 +619,7 @@ function fmtThreat(t) {
   if (t.includes('sudo'))                           return '🟡 Sudo Abuse';
   if (t.includes('foreign'))                        return '🟣 Foreign IP';
   if (t.includes('port_scan') || t === 'port_scan') return '🟠 Port Scan';
+  if (t.includes('spray'))                          return '🔫 Password Spray';
   return '⚪ Suspicious';
 }
 function getSev(threat, conf) {

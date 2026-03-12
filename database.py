@@ -80,12 +80,15 @@ def get_stats():
     sudo = cursor.fetchone()[0]
     cursor.execute("SELECT COUNT(*) FROM alerts WHERE threat_type LIKE '%foreign_ip%'")
     foreign = cursor.fetchone()[0]
+    cursor.execute("SELECT COUNT(*) FROM alerts WHERE threat_type LIKE '%password_spray%'")
+    spray = cursor.fetchone()[0]
     conn.close()
     return {
         'total_alerts'   : total,
         'ssh_brute_force': ssh,
         'sudo_abuse'     : sudo,
-        'foreign_ip'     : foreign
+        'foreign_ip'     : foreign,
+        'password_spray' : spray
     }
 
 def get_recent_alerts(since_id=0):

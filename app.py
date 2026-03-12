@@ -123,6 +123,8 @@ def api_stats():
     sudo = c.fetchone()[0]
     c.execute("SELECT COUNT(*) FROM alerts WHERE threat_type='foreign_ip'")
     foreign = c.fetchone()[0]
+    c.execute("SELECT COUNT(*) FROM alerts WHERE threat_type='password_spray'")
+    spray = c.fetchone()[0]
     c.execute("SELECT COUNT(*) FROM alerts WHERE threat_type='port_scan'")
     port_scan = c.fetchone()[0]
     conn.close()
@@ -131,6 +133,7 @@ def api_stats():
         'ssh_brute_force': ssh,
         'sudo_abuse'     : sudo,
         'foreign_ip'     : foreign,
+        'password_spray' : spray,
         'port_scan'      : port_scan,
     })
 

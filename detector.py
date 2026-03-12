@@ -2,6 +2,8 @@ import joblib
 import numpy as np
 import pandas as pd
 import os
+from datetime import datetime, timedelta
+from collections import defaultdict
 from parser import parse_lines
 
 MODEL_PATH   = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'linux_auth_model.pkl')
@@ -14,7 +16,71 @@ print("✅ ML model loaded successfully")
 print(f"   Model expects {len(columns)} features")
 
 PORT_SCAN_THRESHOLD  = 3
-PORT_SCAN_WINDOW_SEC = 30
+PORT_SCAN_WINDOW_SEC  = 30
+
+# ── Password Spray memory (persists between batches) ─────────────────
+# Structure: { ip: { username: last_seen_datetime } }
+_spray_memory = defaultdict(dict)
+SPRAY_USERNAME_THRESHOLD = 3      # 3+ different usernames from same IP
+SPRAY_WINDOW_MINUTES     = 5      # within 5 minutes
+
+
+def detect_password_spray(df):
+    """
+    Detect password spraying — one IP trying many different usernames.
+    Uses persistent memory across batches.
+    """
+    alerts  = []
+    flagged = set()
+    if df.empty:
+        return alerts, flagged
+
+    # Only look at failed SSH events
+    spray_df = df[
+        (df['status'] == 'Failed') &
+        (df['is_ssh'] == 1) &
+        (df['source_ip'] != 'unknown') &
+        (df['username'] != 'unknown')
+    ].copy()
+
+    if spray_df.empty:
+        return alerts, flagged
+
+    now = datetime.now()
+    cutoff = now - timedelta(minutes=SPRAY_WINDOW_MINUTES)
+
+    for _, row in spray_df.iterrows():
+        ip       = str(row.get('source_ip', 'unknown'))
+        username = str(row.get('username',  'unknown'))
+
+        # Add this username attempt to memory
+        _spray_memory[ip][username] = now
+
+        # Clean up old entries outside window
+        _spray_memory[ip] = {
+            u: t for u, t in _spray_memory[ip].items()
+            if t >= cutoff
+        }
+
+        # Check if threshold reached
+        unique_users = len(_spray_memory[ip])
+        if unique_users >= SPRAY_USERNAME_THRESHOLD and ip not in flagged:
+            conf = round(min(60.0 + unique_users * 5, 95.0), 1)
+            alerts.append({
+                'timestamp'  : str(row.get('timestamp', '')),
+                'source_ip'  : ip,
+                'username'   : username,
+                'service'    : 'ssh',
+                'status'     : 'Failed',
+                'event_type' : 'password_spray',
+                'threat_type': 'password_spray',
+                'confidence' : conf,
+                'raw_log'    : str(row.get('raw_log', '')),
+            })
+            flagged.add(ip)
+            print(f"🔫 Password spray detected: {ip} | {unique_users} usernames in {SPRAY_WINDOW_MINUTES}min")
+
+    return alerts, flagged
 
 
 def detect_port_scans(df):
@@ -234,6 +300,13 @@ def detect(lines):
     if ps_alerts:
         print(f"🔍 Port scan from: {list(flagged_ips)}")
         alerts.extend(ps_alerts)
+
+    # Step 1b — Password spray (rule-based, uses persistent memory)
+    spray_alerts, spray_ips = detect_password_spray(df)
+    for a in spray_alerts:
+        if a['source_ip'] not in flagged_ips:
+            alerts.append(a)
+            flagged_ips.add(a['source_ip'])
 
     # Step 2 — ML for SSH/sudo/foreign (exclude confirmed scan-only rows)
     ml_df = df[~(

@@ -14,6 +14,10 @@ from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT
 
 DB = os.path.join(os.path.dirname(__file__), 'ids.db')
 
+def _esc(v):
+    s = str(v or '-')
+    return s.replace('&','&amp;').replace('<','&lt;').replace('>','&gt;')
+
 # ── Colour palette ─────────────────────────────────────────
 C_DARK   = colors.HexColor('#0a0f1a')
 C_NAVY   = colors.HexColor('#1a3a5c')
@@ -35,6 +39,7 @@ THREAT_COLORS = {
     'sudo_abuse':      C_YELLOW,
     'foreign_ip':      C_PURPLE,
     'port_scan':       C_ORANGE,
+    'password_spray':  colors.HexColor('#ff6600'),
     'authorized':      C_GREEN,
     'suspicious':      C_DIM,
 }
@@ -44,6 +49,7 @@ THREAT_LABELS = {
     'sudo_abuse':      'Sudo Privilege Abuse',
     'foreign_ip':      'Foreign IP Access',
     'port_scan':       'Port Scan / Reconnaissance',
+    'password_spray':  'Password Spray Attack',
     'authorized':      'Authorized Login',
     'suspicious':      'Suspicious Activity',
 }
@@ -53,6 +59,7 @@ SEV_LABELS = {
     'sudo_abuse':      'MEDIUM',
     'foreign_ip':      'HIGH',
     'port_scan':       'HIGH',
+    'password_spray':  'HIGH',
     'authorized':      'INFO',
     'suspicious':      'LOW',
 }
@@ -175,7 +182,7 @@ def get_threat_findings():
     conn = sqlite3.connect(DB)
     c = conn.cursor()
     findings = {}
-    for tt in ['ssh_brute_force','sudo_abuse','foreign_ip','port_scan']:
+    for tt in ['ssh_brute_force','sudo_abuse','foreign_ip','port_scan','password_spray']:
         c.execute("""SELECT COUNT(*), AVG(confidence), MAX(confidence),
                             MIN(detected_at), MAX(detected_at)
                      FROM alerts WHERE threat_type=?""", (tt,))
@@ -328,6 +335,7 @@ def generate_report(output_path):
     sudo  = counts.get('sudo_abuse', 0)
     fip   = counts.get('foreign_ip', 0)
     pscan = counts.get('port_scan', 0)
+    spray = counts.get('password_spray', 0)
     susp  = counts.get('suspicious', 0)
     auth  = counts.get('authorized', 0)
 
@@ -340,6 +348,10 @@ def generate_report(output_path):
         threat_level = 'HIGH'
         tl_color     = C_ORANGE
         tl_text      = 'Significant attack activity detected. Review recommended within 24 hours.'
+    elif spray > 0:
+        threat_level = 'HIGH'
+        tl_color     = C_ORANGE
+        tl_text      = 'Password spray attack detected. Review SSH access policies immediately.'
     elif sudo > 0:
         threat_level = 'MEDIUM'
         tl_color     = C_YELLOW
@@ -391,6 +403,10 @@ def generate_report(output_path):
          Paragraph(f'{fip}  ({fip/total*100:.1f}%)', styles['tbl_cell'])],
         [Paragraph('Port Scan', styles['tbl_cell']),
          Paragraph(f'{pscan}  ({pscan/total*100:.1f}%)', styles['tbl_cell']),
+         Paragraph('Suspicious', styles['tbl_cell']),
+         Paragraph(f'{susp}  ({susp/total*100:.1f}%)', styles['tbl_cell'])],
+        [Paragraph('Password Spray', styles['tbl_cell']),
+         Paragraph(f'{spray}  ({spray/total*100:.1f}%)', styles['tbl_cell']),
          Paragraph('Authorized Logins', styles['tbl_cell']),
          Paragraph(f'{auth}', styles['tbl_cell'])],
         [Paragraph('Monitoring Period Start', styles['tbl_cell']),
@@ -491,9 +507,9 @@ def generate_report(output_path):
         sev_col = SEV_COLORS.get(sev, C_DIM)
         ip_rows.append([
             Paragraph(str(i+1), styles['tbl_cell']),
-            Paragraph(ip or 'unknown', styles['tbl_code']),
-            Paragraph(str(cnt), styles['tbl_cell']),
-            Paragraph(THREAT_LABELS.get(tt, tt), styles['tbl_cell']),
+            Paragraph(_esc(ip or 'unknown'), styles['tbl_code']),
+            Paragraph(_esc(str(cnt)), styles['tbl_cell']),
+            Paragraph(_esc(THREAT_LABELS.get(tt, tt)), styles['tbl_cell']),
             Paragraph(sev, ParagraphStyle('sv2', fontName='Helvetica-Bold',
                 fontSize=8, textColor=sev_col)),
         ])
@@ -528,10 +544,10 @@ def generate_report(output_path):
         sev = SEV_LABELS.get(tt, 'LOW')
         sev_col = SEV_COLORS.get(sev, C_DIM)
         log_rows.append([
-            Paragraph(str(det_at)[:16], styles['tbl_code']),
-            Paragraph(str(src_ip or '-'), styles['tbl_code']),
-            Paragraph(str(user or '-')[:12], styles['tbl_cell']),
-            Paragraph(THREAT_LABELS.get(tt, tt), styles['tbl_cell']),
+            Paragraph(_esc(str(det_at)[:16]), styles['tbl_code']),
+            Paragraph(_esc(src_ip), styles['tbl_code']),
+            Paragraph(_esc(str(user or '-')[:12]), styles['tbl_cell']),
+            Paragraph(_esc(THREAT_LABELS.get(tt, tt)), styles['tbl_cell']),
             Paragraph(f'{float(conf or 0):.1f}', styles['tbl_cell']),
             Paragraph(sev, ParagraphStyle('sv3', fontName='Helvetica-Bold',
                 fontSize=7, textColor=sev_col)),
@@ -608,6 +624,12 @@ def generate_report(output_path):
             f'single-packet authentication, (2) use UFW to close all non-essential ports, '
             f'(3) configure portsentry or similar tool to auto-block scanning IPs, '
             f'(4) ensure only required services are running (systemctl list-units --type=service).'))
+    if spray > 0:
+        recs.append(('HIGH', 'Password Spray Mitigation',
+            f'{spray} password spray attempts detected. Recommend: (1) implement account lockout '
+            f'after 3 failed attempts across different usernames, (2) enforce strong unique passwords '
+            f'using a password manager, (3) enable MFA on all SSH accounts, '
+            f'(4) monitor for single IP attempting multiple usernames.'))
     if sudo > 0:
         recs.append(('MEDIUM', 'Sudo Access Review',
             f'{sudo} sudo abuse events detected. Recommend: (1) audit /etc/sudoers for unnecessary '
@@ -627,7 +649,7 @@ def generate_report(output_path):
             Paragraph(f'<b>{title}</b><br/>{desc}',
                 ParagraphStyle('rd', fontName='Helvetica', fontSize=8.5,
                     textColor=colors.HexColor('#222222'), leading=12))
-        ]], colWidths=[18*mm, 162*mm])
+        ]], colWidths=[22*mm, 158*mm])
         rec_tbl.setStyle(TableStyle([
             ('BACKGROUND',    (0,0), (0,0),  sev_col),
             ('BACKGROUND',    (1,0), (1,0),  colors.HexColor('#f8f8f8')),

@@ -40,11 +40,12 @@ def build_payload(alert):
         'port_scan'      : ('#ff7730', '🟠', 'HIGH',     'Port Scan Detected'),
         'suspicious'     : ('#4a6080', '⚪', 'LOW',      'Suspicious Activity'),
         'authorized'     : ('#00ff88', '✅', 'INFO',     'Authorized Login'),
+        'password_spray' : ('#ff6600', '🔫', 'HIGH',     'Password Spray Attack'),
     }
     color, icon, severity, label = config.get(threat, ('#4a6080', '⚪', 'LOW', 'Unknown'))
 
     return {
-        "text": f"{icon} *AUTH-IDS ALERT* | {label} | Severity: {severity}",
+        "text": f"{icon} *AUTH-IDS ALERT* | {label} | Severity: {severity}" if threat != 'authorized' else f"✅ *AUTH-IDS* | Authorized Login | {ts}",
         "attachments": [{
             "color": color,
             "blocks": [
