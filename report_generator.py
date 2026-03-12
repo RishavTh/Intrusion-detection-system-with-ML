@@ -40,6 +40,7 @@ THREAT_COLORS = {
     'foreign_ip':      C_PURPLE,
     'port_scan':       C_ORANGE,
     'password_spray':  colors.HexColor('#ff6600'),
+    'post_failure_login': C_RED,
     'authorized':      C_GREEN,
     'suspicious':      C_DIM,
 }
@@ -50,6 +51,7 @@ THREAT_LABELS = {
     'foreign_ip':      'Foreign IP Access',
     'port_scan':       'Port Scan / Reconnaissance',
     'password_spray':  'Password Spray Attack',
+    'post_failure_login': 'Compromised Login',
     'authorized':      'Authorized Login',
     'suspicious':      'Suspicious Activity',
 }
@@ -60,6 +62,7 @@ SEV_LABELS = {
     'foreign_ip':      'HIGH',
     'port_scan':       'HIGH',
     'password_spray':  'HIGH',
+    'post_failure_login': 'CRITICAL',
     'authorized':      'INFO',
     'suspicious':      'LOW',
 }
@@ -182,7 +185,7 @@ def get_threat_findings():
     conn = sqlite3.connect(DB)
     c = conn.cursor()
     findings = {}
-    for tt in ['ssh_brute_force','sudo_abuse','foreign_ip','port_scan','password_spray']:
+    for tt in ['ssh_brute_force','sudo_abuse','foreign_ip','port_scan','password_spray','post_failure_login']:
         c.execute("""SELECT COUNT(*), AVG(confidence), MAX(confidence),
                             MIN(detected_at), MAX(detected_at)
                      FROM alerts WHERE threat_type=?""", (tt,))

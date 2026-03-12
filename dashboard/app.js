@@ -412,7 +412,8 @@ function showToast(alert) {
   const icon  = alert.threat_type?.includes('ssh') ? '🔴'
               : alert.threat_type?.includes('sudo') ? '🟡'
               : alert.threat_type?.includes('foreign') ? '🟣'
-              : alert.threat_type?.includes('spray') ? '🔫' : '⚪';
+              : alert.threat_type?.includes('spray') ? '🔫'
+              : alert.threat_type?.includes('post_failure') ? '🚨' : '⚪';
   const title = fmtThreat(alert.threat_type);
 
   const el = document.createElement('div');
@@ -615,6 +616,7 @@ function tbCls(t) {
 function fmtThreat(t) {
   if (!t||t==='none')                               return '⚪ Suspicious';
   if (t === 'authorized')                           return '✅ Authorized';
+  if (t.includes('post_failure'))                   return '🚨 Compromised Login';
   if (t.includes('ssh'))                            return '🔴 SSH Brute Force';
   if (t.includes('sudo'))                           return '🟡 Sudo Abuse';
   if (t.includes('foreign'))                        return '🟣 Foreign IP';

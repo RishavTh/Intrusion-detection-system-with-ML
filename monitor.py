@@ -4,6 +4,7 @@ import threading
 from detector     import detect
 from database     import save_alert
 from slack_notify import send_slack
+from datetime import datetime
 
 AUTH_LOG   = '/var/log/auth.log'
 NEW_LOGS   = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'new_logs.txt')
@@ -18,6 +19,8 @@ def _write_new_logs(lines):
             f.write(line + '\n')
 
 def _notify(alert):
+    if 'detected_at' not in alert:
+        alert['detected_at'] = str(datetime.now())[:19]
     threading.Thread(target=send_slack, args=(alert,), daemon=True).start()
 
 def _process_batch(lines):

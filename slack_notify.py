@@ -21,6 +21,8 @@ def should_notify(alert):
     if threat == 'port_scan'       and NOTIFY_PORTSCAN: return True
     if threat == 'suspicious'      and NOTIFY_SUSP:     return True
     if threat == 'authorized'      and NOTIFY_AUTH:     return True
+    if threat == 'post_failure_login':                   return True
+    if threat == 'password_spray':                       return True
     return False
 
 def build_payload(alert):
@@ -40,7 +42,8 @@ def build_payload(alert):
         'port_scan'      : ('#ff7730', '🟠', 'HIGH',     'Port Scan Detected'),
         'suspicious'     : ('#4a6080', '⚪', 'LOW',      'Suspicious Activity'),
         'authorized'     : ('#00ff88', '✅', 'INFO',     'Authorized Login'),
-        'password_spray' : ('#ff6600', '🔫', 'HIGH',     'Password Spray Attack'),
+        'password_spray'    : ('#ff6600', '🔫', 'HIGH',     'Password Spray Attack'),
+        'post_failure_login': ('#ff0000', '🚨', 'CRITICAL', 'Compromised Login — Success After Failure'),
     }
     color, icon, severity, label = config.get(threat, ('#4a6080', '⚪', 'LOW', 'Unknown'))
 

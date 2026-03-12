@@ -18,6 +18,10 @@ print(f"   Model expects {len(columns)} features")
 PORT_SCAN_THRESHOLD  = 3
 PORT_SCAN_WINDOW_SEC  = 30
 
+# ── Failure memory — tracks recent failed IPs (persists between batches) ──
+_failure_memory = {}   # { ip: last_failure_datetime }
+FAILURE_WINDOW_MINUTES = 10
+
 # ── Password Spray memory (persists between batches) ─────────────────
 # Structure: { ip: { username: last_seen_datetime } }
 _spray_memory = defaultdict(dict)
@@ -48,6 +52,10 @@ def detect_password_spray(df):
 
     now = datetime.now()
     cutoff = now - timedelta(minutes=SPRAY_WINDOW_MINUTES)
+    # Also update failure memory for success-after-failure detection
+    for _, row in spray_df.iterrows():
+        ip = str(row.get('source_ip', 'unknown'))
+        _failure_memory[ip] = now
 
     for _, row in spray_df.iterrows():
         ip       = str(row.get('source_ip', 'unknown'))
@@ -290,6 +298,14 @@ def detect(lines):
 
     alerts = []
 
+    # Step 0 — Update failure memory for all failed SSH events
+    now = datetime.now()
+    for _, row in df.iterrows():
+        if str(row.get('status','')) == 'Failed' and str(row.get('is_ssh','')) in ['1', '1.0', True]:
+            ip = str(row.get('source_ip','unknown'))
+            if ip != 'unknown':
+                _failure_memory[ip] = now
+
     # Step 1 — Port scan (rule-based)
     ps_alerts, flagged_ips = detect_port_scans(df)
     rc_alerts, rc_ips = detect_rapid_connections(df)
@@ -339,14 +355,21 @@ def detect(lines):
     for i, (pred, (_, row)) in enumerate(zip(preds, ml_df.iterrows())):
         # Always alert on successful logins (green info alert)
         if str(row.get('event_type','')) == 'ssh_success':
+            ip = str(row.get('source_ip', 'unknown'))
+            # Check if this IP had recent failures — possible compromise
+            cutoff = datetime.now() - timedelta(minutes=FAILURE_WINDOW_MINUTES)
+            had_failures = ip in _failure_memory and _failure_memory[ip] >= cutoff
+            threat = 'post_failure_login' if had_failures else 'authorized'
+            if had_failures:
+                print(f"⚠️  Success after failure detected: {ip} — possible compromise!")
             alerts.append({
                 'timestamp'  : str(row.get('timestamp',  '')),
-                'source_ip'  : str(row.get('source_ip',  'unknown')),
+                'source_ip'  : ip,
                 'username'   : str(row.get('username',   'unknown')),
                 'service'    : 'ssh',
                 'status'     : 'Success',
                 'event_type' : 'ssh_success',
-                'threat_type': 'authorized',
+                'threat_type': threat,
                 'confidence' : 100.0,
                 'raw_log'    : str(row.get('raw_log',    '')),
             })
