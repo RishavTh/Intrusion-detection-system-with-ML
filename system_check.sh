@@ -102,7 +102,7 @@ echo ""
 echo "── DASHBOARD ───────────────────────────────────"
 grep -q "toggleTheme" /home/rishav/Auth_IDS/dashboard/app.js
 check "Light/dark mode JS"
-grep -q "theme-toggle" /home/rishav/Auth_IDS/dashboard/index.html
+grep -q "theme-switch-wrap" /home/rishav/Auth_IDS/dashboard/index.html
 check "Toggle button in HTML"
 grep -q "body.light" /home/rishav/Auth_IDS/dashboard/style.css
 check "Light mode CSS"
