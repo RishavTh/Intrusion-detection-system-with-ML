@@ -586,3 +586,130 @@ button:hover{border-color:var(--acc);color:var(--acc)}
   color: var(--txt);
 }
 .geo-table tr:hover td { background: #0d1929; }
+
+
+body.light h1, body.light h2, body.light h3, body.light p, body.light span { color: #1a1a2e !important; }
+
+
+body.light .kpi-num { color: #1a1a2e !important; }
+body.light #theme-toggle { background: #1a1a2e !important; color: #ffffff !important; }
+
+/* ── Theme Toggle Switch ────────────────────────────── */
+.theme-switch-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 20px;
+  transition: all 0.3s;
+}
+.theme-switch-wrap:hover { background: #ffffff11; }
+.theme-icon { font-size: 14px; }
+.theme-switch {
+  width: 44px;
+  height: 24px;
+  background: #333a4a;
+  border-radius: 12px;
+  border: 2px solid #ffffff22;
+  position: relative;
+  transition: all 0.3s;
+}
+.theme-switch-thumb {
+  width: 18px;
+  height: 18px;
+  background: #ffffff;
+  border-radius: 50%;
+  position: absolute;
+  top: 1px;
+  left: 1px;
+  transition: all 0.3s;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+}
+/* Light mode switch styles */
+body.light .theme-switch { background: #f9c74f; border-color: #f9c74f; }
+body.light .theme-switch-thumb { left: 23px; background: #ffffff; }
+body.light .theme-switch-wrap:hover { background: #1a1a2e11; }
+
+/* ── Light Mode — override CSS variables ─────────────── */
+body.light {
+  --bg:      #f5f0e8;
+  --bg2:     #ede8dc;
+  --bg3:     #ede8dc;
+  --bg4:     #e8e3d8;
+  --text:    #1a1a2e;
+  --border:  #e0e0e0;
+  --border2: #dee2e6;
+  --dim:     #6c757d;
+  background: #f0f2f5 !important;
+  color: #1a1a2e !important;
+  background-image: none !important;
+}
+body.light .sidebar {
+  background: #1a1a2e !important;
+}
+body.light .navbar {
+  background: #ede8dc !important;
+  border-bottom: 1px solid #dee2e6 !important;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08) !important;
+}
+body.light #theme-toggle {
+  border-color: #1a1a2e33;
+  background: #1a1a2e11;
+  color: #1a1a2e;
+}
+body.light .kpi-card {
+  background: #ede8dc !important;
+  border: 1px solid #dee2e6 !important;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.08) !important;
+}
+body.light .card, body.light .panel {
+  background: #ede8dc !important;
+  border: 1px solid #dee2e6 !important;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.06) !important;
+}
+body.light table { background: #ede8dc !important; }
+body.light th {
+  background: #ddd8cc !important;
+  color: #1a1a2e !important;
+  border-bottom: 2px solid #dee2e6 !important;
+}
+body.light td {
+  color: #1a1a2e !important;
+  border-bottom: 1px solid #f5f5f5 !important;
+}
+body.light tr:hover td { background: #f8f9fa !important; }
+body.light .content { background: #f5f0e8 !important; }
+body.light h1, body.light h2, body.light h3,
+body.light h4, body.light p, body.light span,
+body.light label, body.light div {
+  color: #1a1a2e;
+}
+body.light .kpi-num { color: #1a1a2e !important; }
+body.light .tab-btn { color: #6c757d !important; }
+body.light .tab-btn.active { color: #ffffff !important; }
+body.light .nav-item { color: #dddddd !important; }
+body.light .nav-item:hover { color: #ffffff !important; background: #ffffff22 !important; }
+body.light .nav-item.active { color: #00ff88 !important; }
+body.light .nav-section { color: #aaaaaa !important; }
+body.light .sidebar-label { color: #aaaaaa !important; }
+body.light .sb-label { color: #dddddd !important; }
+body.light .sb-val { color: #ffffff !important; }
+body.light .sb-count { color: #ffffff !important; }
+body.light .ss-label { color: #aaaaaa !important; }
+body.light .ss-val { color: #ffffff !important; }
+body.light .threat-row { color: #dddddd !important; }
+body.light .threat-label { color: #dddddd !important; }
+body.light .threat-count { color: #ffffff !important; }
+body.light .monitor-status { color: #00ff88 !important; }
+body.light .sidebar * { color: #dddddd; }
+body.light .sidebar h3, body.light .sidebar span { color: #aaaaaa !important; }
+
+/* ── Light Mode Terminal ────────────────────────────── */
+body.light .terminal-wrap { background: #1a1a2e !important; border-color: #dee2e6 !important; }
+body.light .term-header   { background: #252a3a !important; }
+body.light .term-body     { background: #1a1a2e !important; color: #00ff88 !important; }
+body.light .term-footer   { background: #252a3a !important; color: #aaa !important; }
+body.light .term-title    { color: #aaaaaa !important; }
+body.light .term-normal   { color: #cccccc !important; }
+body.light .term-dim      { color: #666666 !important; }

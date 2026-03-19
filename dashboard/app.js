@@ -1052,3 +1052,25 @@ switchTab = function(name) {
   _origSwitchTab(name);
   if (name === 'apistatus') runApiChecks();
 };
+
+// ── Light/Dark Theme Toggle ──────────────────────────
+function toggleTheme() {
+  const body = document.body;
+  const btn  = document.getElementById('theme-toggle');
+  if (body.classList.contains('light')) {
+    body.classList.remove('light');
+    btn.textContent = '🌙 Dark';
+    localStorage.setItem('theme', 'dark');
+  } else {
+    body.classList.add('light');
+    btn.textContent = '☀️ Light';
+    localStorage.setItem('theme', 'light');
+  }
+}
+(function() {
+  if (localStorage.getItem('theme') === 'light') {
+    document.body.classList.add('light');
+    const btn = document.getElementById('theme-toggle');
+    if (btn) btn.textContent = '☀️ Light';
+  }
+})();

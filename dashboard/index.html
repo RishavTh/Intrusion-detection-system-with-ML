@@ -110,7 +110,7 @@
       <span class="ss-val" id="ss-time">--:--:--</span>
     </div>
   </div>
-</nav>
+  </nav>
 
 <!-- Main content -->
 <div class="main-wrap">
@@ -122,6 +122,14 @@
       <span class="page-sub" id="page-sub">Security Dashboard</span>
     </div>
     <div class="topbar-right">
+      <div class="theme-switch-wrap" onclick="toggleTheme()" title="Toggle Light/Dark Mode">
+        <span class="theme-icon">🌙</span>
+        <div class="theme-switch">
+          <div class="theme-switch-thumb" id="switch-thumb"></div>
+        </div>
+        <span class="theme-icon">☀️</span>
+      </div>
+      <div class="tb-divider"></div>
       <div class="tb-stat">
         <span class="tb-label">TOTAL ALERTS</span>
         <span class="tb-val red" id="tb-total">0</span>
