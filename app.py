@@ -12,6 +12,12 @@ app = Flask(__name__, static_folder='dashboard', static_url_path='')
 CORS(app)
 
 # ── nmap HTTP signature detection ────────────────────────────
+# Internal dashboard API paths — never flag these as port scans
+SAFE_API_PATHS = [
+    '/api/top-attackers', '/api/stats', '/api/alerts',
+    '/api/health', '/api/generate-report', '/api/alerts/live'
+]
+
 NMAP_SIGNATURES = [
     'nmaplowercheck', '/sdk', '/evox/about', '/HNAP1',
     '/nice%20ports', '/nmap', '/.git', '/admin.php',
@@ -46,7 +52,8 @@ def check_http_portscan(ip, path):
     # Skip normal dashboard traffic — only track suspicious paths
     dashboard_paths = ['/api/alerts', '/api/stats', '/api/health',
                        '/style.css', '/app.js', '/favicon.ico',
-                       '/api/generate-report']
+                       '/api/generate-report', '/api/top-attackers',
+                       '/api/alerts/live']
     if any(path == p or (p != '/' and path.startswith(p)) for p in dashboard_paths):
         return
     tracker[ip].append(now)
@@ -136,6 +143,18 @@ def api_stats():
         'password_spray' : spray,
         'port_scan'      : port_scan,
     })
+
+@app.route('/api/top-attackers')
+def top_attackers():
+    import sqlite3
+    conn = sqlite3.connect(DB)
+    c = conn.cursor()
+    c.execute('''SELECT source_ip, COUNT(*) as cnt FROM alerts
+                 WHERE source_ip != 'unknown'
+                 GROUP BY source_ip ORDER BY cnt DESC LIMIT 8''')
+    rows = c.fetchall()
+    conn.close()
+    return jsonify([{'ip': r[0], 'count': r[1]} for r in rows])
 
 @app.route('/api/generate-report')
 def generate_report_endpoint():
