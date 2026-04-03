@@ -5,3 +5,5 @@ ids.db
 new_logs.txt
 *.iso
 .env
+*.backup
+*.backup2
