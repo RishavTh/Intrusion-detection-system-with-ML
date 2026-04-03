@@ -51,9 +51,9 @@ def check_http_portscan(ip, path):
         tracker[ip] = []
     # Skip normal dashboard traffic — only track suspicious paths
     dashboard_paths = ['/api/alerts', '/api/stats', '/api/health',
-                       '/style.css', '/app.js', '/favicon.ico',
+                       '/style.css', '/app.js', '/favicon.ico', '/',
                        '/api/generate-report', '/api/top-attackers',
-                       '/api/alerts/live']
+                       '/api/alerts/live', '/index.html']
     if any(path == p or (p != '/' and path.startswith(p)) for p in dashboard_paths):
         return
     tracker[ip].append(now)
